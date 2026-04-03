@@ -2,7 +2,7 @@
 
 A Swift CLI coding agent powered by local LLMs via [Ollama](https://ollama.com). No API keys, no cloud — everything runs on your machine.
 
-Built by [KnotTheory.ai](https://knottheory.ai).
+Built by [KnotTheory.ai Inc.](https://knottheory.ai).
 
 ## Features
 
