@@ -222,4 +222,10 @@ Any model available through Ollama works. Tesseract-Claw automatically classifie
 
 MIT License. See [LICENSE](LICENSE) for details.
 
-Copyright (c) 2026 KnotTheory.ai
+### Attribution
+
+The **4-tier LLM tool-calling architecture** — including the ReAct prompt engineering pattern, Mistral text-based tool-call parsing, tiered model classification, auto-fallback cascade, and all associated prompt builders and response parsers (in `ModelTier.swift` and `APIClient.swift`) — is original work by **KnotTheory.ai Inc.**
+
+Tesseract-Claw is designed to work exclusively with **local LLMs via Ollama**. No API tokens, no cloud services, no per-request usage charges.
+
+Copyright (c) 2026 KnotTheory.ai Inc.

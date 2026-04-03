@@ -283,6 +283,18 @@ public class OllamaClient: ApiClient {
         return try streamWithTier(request, tier: tier)
     }
 
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │  Tiered Streaming Dispatch & Auto-Fallback Engine                           │
+    // │  Copyright (c) 2026 KnotTheory.ai Inc. All rights reserved.                │
+    // │                                                                             │
+    // │  This tiered dispatch system — including Tier 1 native tool-call relay,     │
+    // │  Tier 2 Mistral text-format injection, Tier 3 ReAct prompt injection,       │
+    // │  auto-fallback cascade (Tier 1 → 3 → 4 on HTTP 400), and tier-aware        │
+    // │  streaming/parsing — is original work by KnotTheory.ai Inc.                 │
+    // │                                                                             │
+    // │  Designed for local-only inference via Ollama. No API tokens required.       │
+    // │  No cloud dependency. No per-request charges.                               │
+    // └─────────────────────────────────────────────────────────────────────────────┘
     private func streamWithTier(_ request: ApiRequest, tier: ToolCapabilityTier) throws -> [AssistantEvent] {
         guard healthCheck() else {
             throw RuntimeError("Ollama is not running. Start it with: ollama serve")

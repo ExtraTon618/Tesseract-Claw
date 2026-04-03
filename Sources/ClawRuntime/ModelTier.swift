@@ -22,16 +22,25 @@
 
 import Foundation
 
-// ┌─────────────────────────────────────────────────────────────────────┐
-// │  Tiered LLM Tool-Calling Architecture                              │
-// │                                                                     │
-// │  Tier 1: nativeTools      — Ollama native tool_calls JSON           │
-// │  Tier 2: textBasedTools   — Mistral [TOOL_CALLS] text format        │
-// │  Tier 3: reactPrompting   — ReAct Thought/Action/Observation        │
-// │  Tier 4: noTools           — Plain chat, no tool calling            │
-// │                                                                     │
-// │  Auto-fallback: Tier 1 → Tier 3 → Tier 4 on HTTP 400               │
-// └─────────────────────────────────────────────────────────────────────┘
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │  Tiered LLM Tool-Calling Architecture                                      │
+// │  Copyright (c) 2026 KnotTheory.ai Inc. All rights reserved.                │
+// │                                                                             │
+// │  This tiered tool-calling system — including the 4-tier classification,     │
+// │  ReAct prompt engineering, Mistral text-based parsing, auto-fallback        │
+// │  cascade, and all associated prompt builders and response parsers — is      │
+// │  original work by KnotTheory.ai Inc.                                        │
+// │                                                                             │
+// │  Tesseract-Claw is designed to work exclusively with local LLMs via         │
+// │  Ollama. No API tokens, no cloud services, no usage charges.                │
+// │                                                                             │
+// │  Tier 1: nativeTools      — Ollama native tool_calls JSON                   │
+// │  Tier 2: textBasedTools   — Mistral [TOOL_CALLS] text format                │
+// │  Tier 3: reactPrompting   — ReAct Thought/Action/Observation                │
+// │  Tier 4: noTools          — Plain chat, no tool calling                     │
+// │                                                                             │
+// │  Auto-fallback: Tier 1 → Tier 3 → Tier 4 on HTTP 400                       │
+// └─────────────────────────────────────────────────────────────────────────────┘
 
 // MARK: - Capability Tier
 
