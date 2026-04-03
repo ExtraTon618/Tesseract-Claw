@@ -1,0 +1,28 @@
+# Xcode
+Build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# SPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Build artifacts
+*.o
+*.d
+*.swiftdeps
+*.swiftdeps~
+*.dia
+
+# macOS
+.DS_Store
+._*
+
+# Generated Xcode project (use xcodegen generate)
+*.xcodeproj/
+
+# Session data
+.claw-agents/

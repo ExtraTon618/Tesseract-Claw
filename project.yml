@@ -1,0 +1,92 @@
+name: TesseractClaw
+options:
+  bundleIdPrefix: KnotTheory.ai
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  ClawRuntime:
+    type: library.static
+    platform: macOS
+    sources:
+      - path: Sources/ClawRuntime
+    settings:
+      base:
+        PRODUCT_NAME: ClawRuntime
+        PRODUCT_MODULE_NAME: ClawRuntime
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        DEFINES_MODULE: YES
+        BUILD_LIBRARY_FOR_DISTRIBUTION: NO
+
+  ClawAPI:
+    type: library.static
+    platform: macOS
+    sources:
+      - path: Sources/ClawAPI
+    dependencies:
+      - target: ClawRuntime
+    settings:
+      base:
+        PRODUCT_NAME: ClawAPI
+        PRODUCT_MODULE_NAME: ClawAPI
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        DEFINES_MODULE: YES
+        BUILD_LIBRARY_FOR_DISTRIBUTION: NO
+
+  TesseractClaw:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/TesseractClaw
+    dependencies:
+      - target: ClawRuntime
+      - target: ClawAPI
+    settings:
+      base:
+        PRODUCT_NAME: tesseract-claw
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_IDENTITY: "-"
+        INSTALL_PATH: /usr/local/bin
+        BUILT_PRODUCTS_DIR: $(SRCROOT)/Build/Products/$(CONFIGURATION)
+        CONFIGURATION_BUILD_DIR: $(SRCROOT)/Build/Products/$(CONFIGURATION)
+    postBuildScripts:
+      - script: |
+          if [ "${CONFIGURATION}" = "Release" ]; then
+            cp "${BUILT_PRODUCTS_DIR}/tesseract-claw" "${HOME}/tesseract-claw"
+            echo "Copied tesseract-claw to ~/tesseract-claw"
+          fi
+        name: "Copy to Home"
+
+  ClawRuntimeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/ClawRuntimeTests
+    dependencies:
+      - target: ClawRuntime
+      - target: ClawAPI
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  TesseractClaw:
+    build:
+      targets:
+        TesseractClaw: all
+        ClawRuntime: all
+        ClawAPI: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "--help": true
+    test:
+      targets:
+        - ClawRuntimeTests
