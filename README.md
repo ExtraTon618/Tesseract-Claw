@@ -1,8 +1,10 @@
 # Tesseract-Claw
 
-A Swift CLI coding agent powered by local LLMs via [Ollama](https://ollama.com). No API keys, no cloud — everything runs on your machine.
+A Swift CLI coding agent powered by local LLMs via [Ollama](https://ollama.com). No API keys, no cloud, no per-request charges — everything runs on your machine.
 
 Built by [KnotTheory.ai Inc.](https://knottheory.ai).
+
+> **Prerequisites:** [Ollama](https://ollama.com) (free, open-source local LLM runtime) and **macOS 13+** with **Swift 5.9+**. Install Ollama with `brew install ollama`, then pull a model: `ollama pull gemma3`.
 
 ## Features
 
