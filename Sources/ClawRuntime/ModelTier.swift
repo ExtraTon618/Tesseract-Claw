@@ -206,10 +206,17 @@ public struct TierPromptBuilder {
         3. After "Action:" you MUST have "Action Input:" with a JSON object on the next line — e.g. {"command": "ls"} or {"query": "search term"}
         4. Available tool names are: \(toolNames)
         5. Output ONLY ONE Action + Action Input per response. Wait for the Observation before the next step.
-        6. For complex tasks, break them into multiple steps. Example: to create a file from web content, first use web_search, then web_fetch the URL, then write_file with the content. Do each step one at a time.
+        6. For complex tasks, break them into multiple steps. You MUST chain tools together:
+           - To get web content: web_search → pick best URL → web_fetch that URL → read the actual content → then answer
+           - To explore a codebase: glob_search → read_file on interesting results → then answer
+           - To modify code: read_file first → understand it → then edit_file or write_file
+           - To research a topic: web_search → web_fetch multiple URLs (or spawn agents) → synthesize → then answer
+           NEVER answer based on just search result snippets — ALWAYS fetch the actual page content first.
         7. When you have enough information, write "Thought: I now know the final answer" then "Final Answer:"
         8. If no tool is needed, go straight to "Thought: I can answer this directly" then "Final Answer:"
         9. NEVER skip steps — if you need information from the web, ALWAYS fetch it first before writing files
+        10. NEVER fabricate or hallucinate information. If web_search returns a list of links but no actual content, you MUST call web_fetch on one of those URLs to get the real content before answering. Only include facts from actual Observations — never invent data.
+        11. Your Final Answer MUST be in readable markdown format — use headings, bullet points, and paragraphs. NEVER output raw JSON as your final answer. The structured_output tool is only for programmatic data exchange, not for answering the user.
         """
     }
 
@@ -330,8 +337,25 @@ public struct TierResponseParser {
             }
 
             // Action: ...
+            // Handles both "Action: tool_name" and "Action: tool_name({"arg": "val"})"
             if lower.hasPrefix("action:") {
-                currentAction = String(trimmed.dropFirst("action:".count)).trimmingCharacters(in: .whitespaces)
+                let raw = String(trimmed.dropFirst("action:".count)).trimmingCharacters(in: .whitespaces)
+                // Check if LLM inlined the arguments: tool_name({"key": "value"})
+                if let parenIdx = raw.firstIndex(of: "("),
+                   raw.last == ")" {
+                    let toolName = String(raw[raw.startIndex..<parenIdx]).trimmingCharacters(in: .whitespaces)
+                    let argsStr = String(raw[raw.index(after: parenIdx)..<raw.index(before: raw.endIndex)])
+                    currentAction = nil
+                    let argsJson = normalizeArgumentsJSON(argsStr, toolName: toolName)
+                    toolCalls.append(ParsedToolCall(
+                        toolName: toolName,
+                        arguments: argsJson,
+                        thought: currentThought
+                    ))
+                    currentThought = nil
+                } else {
+                    currentAction = raw
+                }
                 continue
             }
 
@@ -353,6 +377,30 @@ public struct TierResponseParser {
 
             // Observation: ... (skip — this is tool output injected by the runtime)
             if lower.hasPrefix("observation:") {
+                continue
+            }
+
+            // [tool_use: tool_name({"arg": "val"})] — alternate format some models emit
+            if lower.hasPrefix("[tool_use:") || lower.hasPrefix("[tool_call:") {
+                let content = trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+                let afterColon: String
+                if let colonIdx = content.firstIndex(of: ":") {
+                    afterColon = String(content[content.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
+                } else {
+                    afterColon = content
+                }
+                if let parenIdx = afterColon.firstIndex(of: "("),
+                   afterColon.hasSuffix(")") {
+                    let toolName = String(afterColon[afterColon.startIndex..<parenIdx]).trimmingCharacters(in: .whitespaces)
+                    let argsStr = String(afterColon[afterColon.index(after: parenIdx)..<afterColon.index(before: afterColon.endIndex)])
+                    let argsJson = normalizeArgumentsJSON(argsStr, toolName: toolName)
+                    toolCalls.append(ParsedToolCall(
+                        toolName: toolName,
+                        arguments: argsJson,
+                        thought: currentThought
+                    ))
+                    currentThought = nil
+                }
                 continue
             }
         }
@@ -418,6 +466,9 @@ public struct TierResponseParser {
 
         // Mistral format
         if lower.contains("[tool_calls]") { return true }
+
+        // [tool_use: ...] or [tool_call: ...] format
+        if lower.contains("[tool_use:") || lower.contains("[tool_call:") { return true }
 
         // JSON tool call pattern
         if lower.contains("\"name\"") && lower.contains("\"arguments\"") { return true }

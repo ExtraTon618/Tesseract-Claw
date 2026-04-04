@@ -102,6 +102,13 @@ public struct LiveToolExecutor: ToolExecutor {
         switch toolName {
         case "read_file":
             let filePath = json?["file_path"] as? String ?? input
+            // Auto-detect directories — redirect to glob_search
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), isDir.boolValue {
+                let result = globSearch(pattern: "*", path: filePath)
+                if result.filenames.isEmpty { return "Directory '\(filePath)' is empty." }
+                return "Directory listing of \(filePath):\n\(result.filenames.joined(separator: "\n"))"
+            }
             // Auto-detect URLs — redirect to web_fetch
             if filePath.hasPrefix("http://") || filePath.hasPrefix("https://") {
                 let output = try webFetch(url: filePath, maxChars: 20_000)

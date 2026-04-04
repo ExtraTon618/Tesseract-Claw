@@ -696,8 +696,14 @@ public class OllamaClient: ApiClient {
     // MARK: - Tier Prompt Injection
 
     /// Convert OllamaToolSpec array to ToolDescription for prompt builders.
-    private func toolDescriptions() -> [ToolDescription] {
-        toolSpecs.map { spec in
+    /// Tools to exclude from Tier 2/3 ReAct/Mistral prompts — they confuse local models
+    private static let textTierExcludedTools: Set<String> = ["structured_output"]
+
+    private func toolDescriptions(forTextTier: Bool = false) -> [ToolDescription] {
+        toolSpecs.compactMap { spec in
+            if forTextTier && Self.textTierExcludedTools.contains(spec.function.name) {
+                return nil
+            }
             let params = spec.function.parameters.properties.map { (key, prop) in
                 let required = spec.function.parameters.required.contains(key)
                 return (name: key, type: prop.type, required: required, description: prop.description)
@@ -708,13 +714,13 @@ public class OllamaClient: ApiClient {
 
     private func injectMistralToolPrompt(_ request: ApiRequest) -> ApiRequest {
         let basePrompt = request.systemPrompt.joined(separator: "\n\n")
-        let mistralPrompt = TierPromptBuilder.buildMistralSystemPrompt(base: basePrompt, tools: toolDescriptions())
+        let mistralPrompt = TierPromptBuilder.buildMistralSystemPrompt(base: basePrompt, tools: toolDescriptions(forTextTier: true))
         return ApiRequest(systemPrompt: [mistralPrompt], messages: request.messages)
     }
 
     private func injectReActToolPrompt(_ request: ApiRequest) -> ApiRequest {
         let basePrompt = request.systemPrompt.joined(separator: "\n\n")
-        let reactPrompt = TierPromptBuilder.buildReActSystemPrompt(base: basePrompt, tools: toolDescriptions())
+        let reactPrompt = TierPromptBuilder.buildReActSystemPrompt(base: basePrompt, tools: toolDescriptions(forTextTier: true))
         return ApiRequest(systemPrompt: [reactPrompt], messages: request.messages)
     }
 

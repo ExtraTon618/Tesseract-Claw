@@ -268,8 +268,12 @@ func buildRuntime(model: String, permissionMode: PermissionMode, mdRenderer: Ter
 
 // MARK: - Run One Turn
 
+/// Tracks whether any text was streamed to the terminal during a turn.
+var didStreamText = false
+
 func makeStatusHandler(_ spinner: Spinner) -> StatusCallback {
     var firstText = true
+    didStreamText = false
     return { event in
         switch event {
         case .thinking:
@@ -292,6 +296,7 @@ func makeStatusHandler(_ spinner: Spinner) -> StatusCallback {
                 spinner.clear()
                 firstText = false
             }
+            didStreamText = true
         case .done:
             spinner.clear()
             firstText = true
@@ -712,7 +717,21 @@ func runRepl(model: String, permissionMode: PermissionMode) {
         do {
             let summary = try runtime.runTurn(input, prompter: &prompter, onStatus: onStatus)
             mdRenderer.flush()
-            print() // newline after streamed output
+            // For Tier 2/3 (ReAct/Mistral) with suppressed streaming, the final answer
+            // was not streamed via onToken — print it now from the summary.
+            if !didStreamText {
+                for message in summary.assistantMessages {
+                    for block in message.blocks {
+                        if case .text(let text) = block {
+                            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmed.isEmpty {
+                                print(mdRenderer.render(trimmed))
+                            }
+                        }
+                    }
+                }
+            }
+            print() // newline after output
             // Show tool activity summary
             if !summary.toolResults.isEmpty {
                 let toolNames = summary.toolResults.compactMap { msg -> String? in

@@ -174,14 +174,40 @@ public struct GlobSearchOutput: Equatable, Sendable {
 
 public func globSearch(pattern: String, path: String? = nil, limit: Int = 250) -> GlobSearchOutput {
     let start = DispatchTime.now()
-    let searchPath = path ?? FileManager.default.currentDirectoryPath
+
+    // If the pattern is an absolute path (e.g. "/Users/foo/project/*.swift"),
+    // split it into a search directory and a relative glob pattern.
+    // This handles LLMs that pass full paths as the pattern instead of using the path parameter.
+    var effectivePattern = pattern
+    var searchPath = path ?? FileManager.default.currentDirectoryPath
+
+    if path == nil && (pattern as NSString).isAbsolutePath {
+        let nsPattern = pattern as NSString
+        // Find the deepest directory prefix that doesn't contain glob characters
+        let components = nsPattern.pathComponents
+        var dirParts: [String] = []
+        var globParts: [String] = []
+        var foundGlob = false
+        for component in components {
+            if !foundGlob && !component.contains("*") && !component.contains("?") && !component.contains("{") {
+                dirParts.append(component)
+            } else {
+                foundGlob = true
+                globParts.append(component)
+            }
+        }
+        if !dirParts.isEmpty && !globParts.isEmpty {
+            searchPath = NSString.path(withComponents: dirParts)
+            effectivePattern = globParts.joined(separator: "/")
+        }
+    }
 
     var results: [String] = []
     let fm = FileManager.default
 
     if let enumerator = fm.enumerator(atPath: searchPath) {
         while let file = enumerator.nextObject() as? String {
-            if matchesGlobPattern(file, pattern: pattern) {
+            if matchesGlobPattern(file, pattern: effectivePattern) {
                 results.append(file)
                 if results.count >= limit {
                     let elapsed = DispatchTime.now().uptimeNanoseconds - start.uptimeNanoseconds

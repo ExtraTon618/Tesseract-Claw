@@ -197,6 +197,9 @@ public enum StatusEvent {
 
 /// Maximum number of output lines to show inline before truncating.
 private let toolOutputMaxLines = 6
+/// Tools that should show more output lines (file listings, search results, agent output).
+private let verboseOutputTools: Set<String> = ["glob_search", "grep_search", "todo", "agent", "web_fetch", "web_search", "structured_output"]
+private let verboseOutputMaxLines = 50
 
 /// Format a tool call header: `⏺ Bash(command)` or `⏺ Read(path)`
 public func formatToolHeader(name: String, input: String) -> String {
@@ -258,6 +261,8 @@ public func renderToolBlock(name: String, input: String, output: String, isError
     let header = formatToolHeader(name: name, input: input)
     let icon = isError ? "\u{1B}[31m⏺\u{1B}[0m" : "\u{1B}[34m⏺\u{1B}[0m"  // red or blue dot
 
+    let maxLines = verboseOutputTools.contains(name) ? verboseOutputMaxLines : toolOutputMaxLines
+
     let lines = output.components(separatedBy: "\n")
     let trimmedLines = lines.map { $0.trimmingCharacters(in: .init(charactersIn: "\r")) }
 
@@ -266,7 +271,7 @@ public func renderToolBlock(name: String, input: String, output: String, isError
 
     if trimmedLines.isEmpty || (trimmedLines.count == 1 && trimmedLines[0].isEmpty) {
         parts.append("  \u{1B}[2m⎿\u{1B}[0m  (no output)")
-    } else if trimmedLines.count <= toolOutputMaxLines {
+    } else if trimmedLines.count <= maxLines {
         // Show all lines
         for (i, line) in trimmedLines.enumerated() {
             let prefix = i == 0 ? "  \u{1B}[2m⎿\u{1B}[0m  " : "     "
@@ -274,7 +279,7 @@ public func renderToolBlock(name: String, input: String, output: String, isError
         }
     } else {
         // Show first few lines + truncation notice
-        let showCount = toolOutputMaxLines - 1
+        let showCount = maxLines - 1
         for (i, line) in trimmedLines.prefix(showCount).enumerated() {
             let prefix = i == 0 ? "  \u{1B}[2m⎿\u{1B}[0m  " : "     "
             parts.append("\(prefix)\(line)")
