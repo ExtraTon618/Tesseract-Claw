@@ -35,6 +35,26 @@ Built by [KnotTheory.ai Inc.](https://knottheory.ai).
 
 ## Quick Start
 
+### Option A: Download the pre-built binary
+
+Download the latest release from the [Releases page](https://github.com/KnotTheory-ai-Inc/Tesseract-Claw/releases). The binary is codesigned with an Apple Developer ID, so it should run without Gatekeeper issues.
+
+```bash
+# Extract and install
+tar xzf tesseract-claw-v0.6.0-macos-universal.tar.gz
+cp tesseract-claw-v0.6.0-macos/tesseract-claw /usr/local/bin/
+
+# Verify
+tesseract-claw --version
+```
+
+> **Note (macOS Gatekeeper):** The release binary is codesigned, but if macOS still blocks it (e.g. the quarantine attribute wasn't cleared), run:
+> ```bash
+> xattr -cr /usr/local/bin/tesseract-claw
+> ```
+
+### Option B: Build from source
+
 ```bash
 # 1. Install Ollama and pull a model
 brew install ollama
