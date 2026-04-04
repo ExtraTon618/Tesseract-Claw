@@ -39,7 +39,7 @@ ollama serve &
 ollama pull gemma3
 
 # 2. Build Tesseract-Claw
-git clone https://github.com/ExtraTon618/Tesseract-Claw.git
+git clone https://github.com/KnotTheory-ai-Inc/Tesseract-Claw.git
 cd Tesseract-Claw
 swift build -c release
 
