@@ -29,7 +29,8 @@ Built by [KnotTheory.ai Inc.](https://knottheory.ai).
 ## Requirements
 
 - **macOS 13+** (Ventura or later)
-- **Swift 5.9+**
+- **Xcode 15+** or the Xcode Command Line Tools (`xcode-select --install`)
+- **Swift 5.9+** (ships with Xcode 15+)
 - **[Ollama](https://ollama.com)** installed and running
 
 ## Quick Start
@@ -155,17 +156,126 @@ Configure pre/post tool-use hooks in `~/.claw/settings.json`:
 }
 ```
 
-## Building with Xcode
+## Building
 
-If you prefer Xcode over SPM:
+### Option 1: Swift Package Manager (recommended)
+
+The simplest way to build — no extra tools needed.
 
 ```bash
-# Requires XcodeGen (brew install xcodegen)
-xcodegen generate
-xcodebuild -project TesseractClaw.xcodeproj -scheme TesseractClaw -configuration Release build
+# Debug build (faster compilation, includes debug symbols)
+swift build
+
+# Release build (optimized, smaller binary)
+swift build -c release
 ```
 
-The release binary is output to `Build/Products/Release/tesseract-claw`.
+The binary is output to:
+- Debug: `.build/debug/tesseract-claw`
+- Release: `.build/release/tesseract-claw`
+
+### Option 2: Xcode GUI
+
+If you prefer working in Xcode:
+
+```bash
+# Install XcodeGen if you don't have it
+brew install xcodegen
+
+# Generate the Xcode project
+xcodegen generate
+
+# Open in Xcode
+open TesseractClaw.xcodeproj
+```
+
+Then select the `TesseractClaw` scheme and hit **Cmd+B** to build, or **Cmd+R** to build and run.
+
+### Option 3: Xcode Command Line
+
+```bash
+# Generate project + build in one step
+xcodegen generate && xcodebuild -project TesseractClaw.xcodeproj -scheme TesseractClaw -configuration Release build
+```
+
+The binary is output to `Build/Products/Release/tesseract-claw`.
+
+### Installing the Binary
+
+After building, copy the binary to a directory on your `PATH`:
+
+```bash
+# From SPM build
+cp .build/release/tesseract-claw /usr/local/bin/
+
+# From Xcode build
+cp Build/Products/Release/tesseract-claw /usr/local/bin/
+```
+
+Verify it works:
+
+```bash
+tesseract-claw --version
+```
+
+### Setting Up Ollama
+
+Tesseract-Claw requires [Ollama](https://ollama.com) to be running with at least one model installed.
+
+```bash
+# Install Ollama
+brew install ollama
+
+# Start the Ollama server (runs on http://127.0.0.1:11434)
+ollama serve
+
+# Pull a model — gemma3 is the recommended default (supports text + vision)
+ollama pull gemma3
+```
+
+Other recommended models to try:
+
+```bash
+ollama pull llama3.2        # Tier 1 — native tool calling
+ollama pull mistral         # Tier 2 — text-based tool calling
+ollama pull deepseek-coder  # Tier 3 — ReAct prompting, good for code
+ollama pull qwen2.5         # Tier 1 — native tool calling
+```
+
+Tesseract-Claw auto-detects which tier each model belongs to and adapts its tool-calling strategy accordingly. See [Supported Models](#supported-models) for the full list.
+
+### Troubleshooting
+
+**`swift build` fails with "no such module"**
+Make sure you have Xcode 15+ or the Command Line Tools installed:
+```bash
+xcode-select --install
+swift --version   # should show 5.9+
+```
+
+**"Ollama is not running" error**
+Start the Ollama server in a separate terminal:
+```bash
+ollama serve
+```
+
+**"Model not found" error**
+Pull the model first:
+```bash
+ollama pull gemma3
+```
+
+**Build succeeds but binary crashes on launch**
+Make sure Ollama is reachable at `http://127.0.0.1:11434`. You can verify with:
+```bash
+curl http://127.0.0.1:11434
+# Should return: Ollama is running
+```
+
+**XcodeGen not found**
+```bash
+brew install xcodegen
+```
 
 ## Architecture
 
